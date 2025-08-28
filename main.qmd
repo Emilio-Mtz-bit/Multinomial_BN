@@ -1,0 +1,91 @@
+---
+title: "main"
+author: "Diego Aréchiga"
+format: html
+editor: visual
+---
+
+```{python}
+import pandas as pd
+import numpy as np
+```
+
+```{python}
+data = pd.read_csv("./eod_2017_csv/tviaje_eod2017/conjunto_de_datos/tviaje.csv")
+```
+
+```{python}
+data.head()
+```
+
+```{python}
+data = data.drop(columns = ["p5_11a","p5_12_6","p5_12_7","p5_13", "p5_15_14", "p5_15_04", "p5_15_05", "p5_15_09", "p5_15_17", "p5_15_02", "p5_15_03", "p5_15_06", "p5_15_07", "p5_15_08", "p5_15_10", "p5_15_11", "p5_15_12" , "p5_15_13", "p5_15_14", "p5_15_15", "p5_15_16", "p5_15_17", "p5_15_18", "p5_15_19", "p5_15_20", "p5_18", "p5_19", "p5_20", "p5_21_1", "p5_21_2", "p5_22", "p5_23", "p5_24", "p5_25", "p5_26", "p5_27_1", "p5_27_2", "p5_27_3", "p5_27_4", "p5_27_5", "p5_27_6", "p5_27_7", "p5_27_8", "p5_3", "p5_6", "p5_7_6", "dto_origen", "dto_dest", "n_via", "p5_14_20", "factor", "upm_dis", "est_dis"])
+```
+
+```{python}
+data.info()
+```
+
+```{python}
+data.columns 
+```
+
+```{python}
+data.columns = ["id_via", "id_soc", "entidad", "hora_ini", "min_ini", "hora_fin", "min_fin", "used_auto", "veces_auto", "used_colectivo", "used_uber", "used_taxi", "used_metro", "used_autobusM1", "used_bicicleta", "used_autobus", "used_moto", "used_trolibus", "used_metrobus", "used_tren_ligero", "used_tren_suburbano", "used_caminar", "used_mixcable", "used_bicitaxi", "used_mototaxi", "used_transporte_escolar", "used_transporte_personal", "estrato", "tam_localidad", "sexo", "edad"]
+```
+
+```{python}
+data.head()
+data.columns
+```
+
+```{python}
+
+motorizados = ["used_auto", "used_colectivo", "used_uber", "used_taxi", "used_metro", "used_autobusM1", "used_autobus", "used_moto", "used_trolibus", "used_metrobus", "used_tren_ligero", "used_tren_suburbano", "used_mixcable", "used_mototaxi", "used_transporte_escolar", "used_transporte_personal"]
+
+no_motorizados = ["used_bicicleta", "used_caminar", "used_bicitaxi"]
+
+mot = []
+for j in range (0, data.shape[0]):
+  for i,s in enumerate(motorizados):
+    if data.loc[j,s] == 1:
+      mot.append(1)
+      break
+    elif i==len(motorizados)-1:
+      mot.append(0)
+
+no_mot = []
+
+for j in range (0, data.shape[0]):
+  for i,s in enumerate(no_motorizados):
+    if data.loc[j,s] == 1:
+      no_mot.append(1) 
+      break
+    elif i==len(no_motorizados)-1:
+      no_mot.append(0)
+      
+
+```
+
+```{python}
+data["motorizado"]=mot
+data["no_motorizado"]=no_mot
+```
+
+```{python}
+data.head()
+```
+
+```{python}
+data.columns
+```
+
+```{python}
+data = data.drop(columns = ["used_colectivo", "used_uber", "used_taxi", "used_metro", "used_moto", "used_trolibus", "used_metrobus", "used_tren_ligero", "used_tren_suburbano", "used_mixcable", "used_bicitaxi", "used_mototaxi","used_transporte_escolar", "used_transporte_personal"])
+```
+
+```{python}
+data.columns
+
+```
+
