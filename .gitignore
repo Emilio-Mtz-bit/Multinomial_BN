@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+Multinomial_BN.Rproj
+
+# Ignorar datos pesados
+eod_2017_csv/*/conjunto_de_datos/*.csv
+data/
+.DS_Store
