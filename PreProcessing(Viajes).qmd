@@ -1,0 +1,82 @@
+---
+title: "Optimal DAG para viajes"
+author: "Jose Emilio Martinez Hernandez"
+format: html
+editor: source
+---
+```{r}
+data = read.csv("data_limpio.csv")
+```
+
+```{r}
+data = subset(data, select = -estudiante)
+```
+
+```{r}
+data
+```
+
+
+```{r}
+data$sexo <- factor(data$sexo, levels=c(1,2), labels=c("Hombre", "Mujer"))
+data$used_auto <- factor(data$used_auto, levels=c(1,2), labels=c("Si", "No"))
+data$used_caminar <- factor(data$used_caminar, levels=c(1,2), labels=c("Si", "No"))
+data$used_autobus <- factor(data$used_autobus, levels=c(1,2), labels=c("Si", "No"))
+data$used_bicicleta <- factor(data$used_bicicleta, levels=c(1,2), labels=c("Si", "No"))
+data$no_motorizado <- factor(data$no_motorizado, levels = c(0,1), labels=c("No", "Si"))
+data$motorizado <- factor(data$motorizado, levels=c(0,1), labels=c("No", "Si"))
+data$used_autobusM1 <- factor(data$used_autobusM1, levels = c(1,2), labels=c("Si", "No"))
+data$estrato <- factor(data$estrato, levels = c(1,2,3,4), labels = c("Bajo","Medio_Bajo","Medio_alto","Alto"))
+
+# Factorización de variables que bnlearn requiere como factores
+data$tam_localidad <- factor(data$tam_localidad)
+data$entidad <- factor(data$entidad)
+```
+
+
+```{r}
+data
+```
+
+
+```{r}
+# Discretización de variables continuas
+data$edad <- cut(data$edad, breaks=c(0,18,35,65,100), labels=c("Joven", "Adulto_Joven", "Adulto", "Mayor"))
+data$hora_cat <- cut(data$hora_ini, breaks=c(-1,6,12,18,24), labels=c("Madrugada", "Mañana", "Tarde", "Noche"))
+```
+
+```{r}
+data
+```
+
+```{r}
+data$duracion_min <- (data$hora_fin * 60 + data$min_fin) - (data$hora_ini * 60 + data$min_ini) #covertir horas a min, calcular
+data$duracion_min <- ifelse(data$duracion_min < 0, data$duracion_min + 24*60, data$duracion_min)#si la duracion del viaje es negatica, se suman 24 hras para viajes que cruzxan la media noche
+data$viaje_corto <- factor(ifelse(data$duracion_min < 40, "Menos_40min", "Mas_40min")) 
+```
+
+```{r}
+data
+```
+
+```{r}
+final_data = data
+final_data = subset(final_data, select = -id_via)
+final_data = subset(final_data, select = -id_soc)
+final_data = subset(final_data, select = -hora_ini)
+final_data = subset(final_data, select = -hora_fin)
+final_data = subset(final_data, select = -min_ini)
+final_data = subset(final_data, select = -min_fin)
+final_data = subset(final_data, select = -veces_auto)
+```
+
+```{r}
+final_data
+```
+
+```{r}
+write.csv(final_data, "DF_DAG(Viajes).csv", row.names = FALSE)
+```
+
+
+
