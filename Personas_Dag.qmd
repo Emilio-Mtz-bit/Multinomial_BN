@@ -1,0 +1,249 @@
+
+```{r}
+set.seed(12345)
+data=data_persona
+data <- as.data.frame(data_persona)
+data
+
+
+```
+
+
+```{r}
+data=merge(data, tsdem, by = "id_soc")
+
+data = data[, !names(data) %in% c("edad.x", "id_soc", "dias","id_hog","n_ren","parentesco","sexo.y","edad.y","niv","gra","p3_8","p4_2","p4_3","p5_4","p6_4","estrato.y","factor","upm_dis","est_dis","distrito","ent","mun")] 
+#Borramos columnas inutiles
+# No borrar P_3_7(ocupacion),tloc
+
+data$veces_auto[data$veces_auto >2 ] = "True" #Si usa mas de dos veces el auto al dia True
+data$veces_auto[data$veces_auto <=2 ] = "False" #DE otra manera Falso
+data$veces_auto = as.factor(data$veces_auto) 
+
+names(data)[names(data) == "p3_7"] = "Ocupacion"
+names(data)[names(data) == "sexo.x"]="sexo"
+names(data)[names(data) == "estrato.x"]="estrato"
+#Cambiar nombre de columnas
+
+data$sexo= factor(data$sexo, levels= c(1,2), labels= c ("Hombre","Mujer"))
+
+data$estrato = factor(data$estrato, levels = c(1,2,3,4), labels = c("Bajo","Medio_bajo","Medio_alto","Alto") )
+
+data$entidad[data$entidad != 9 & data$entidad != 15] = 0  
+data$entidad = factor(data$entidad,
+                             levels = c(9, 15,0),
+                             labels = c("Mexico", "Ciudad de Mexico","Other"))
+                                            
+data$used_auto= factor(data$used_auto , levels = c(0,1), labels = c("False","True"))
+data$used_autobusM1= factor(data$used_autobusM1 , levels = c(0,1), labels = c("False","True"))
+data$used_autobus= factor(data$used_autobus , levels = c(0,1), labels = c("False","True"))
+data$used_bicicleta= factor(data$used_bicicleta , levels = c(0,1), labels = c("False","True"))
+data$used_caminar = factor(data$used_caminar, levels = c(0,1), labels = c("False","True"))
+data$Ocupacion[!data$Ocupacion %in% 1:8] = 0
+data$Ocupacion= factor(data$Ocupacion, levels = c(1,2,3,4,5,6,7,8,0), labels = c(
+  "trabajó",
+  "tenía trabajo, pero no trabajó",
+  "buscó trabajo",
+  "Es estudiante",
+  "Se dedica a los quehaceres del hogar o a cuidar a sus hijos",
+  "Es jubilado(a) o pensionado(a)",
+  "Está incapacitado(a) permanentemente para trabajar",
+  "No trabajó",
+  "Other"
+))
+
+data$tloc = factor(data$tloc , levels = c(1,2,3,4),labels = c ("Localidades mayores de 100000 habitantes",
+"Localidades de 15,000 a 99,999 habitantes",
+"Localidades de 2,500 a 14,999 habitantes",
+"Localidades menores de 2,500 habitantes"
+))
+
+#Convertir labels a lenguaje hablado
+
+```
+
+```{r}
+data
+write.csv(data, "data_persona_limpia.csv", row.names = FALSE)
+```
+
+# DAG 1
+
+```{r}
+library(bnlearn)
+library(Rgraphviz)
+# Definir DAG
+nodes <- c("sexo","estrato","entidad","tloc",
+           "Ocupacion","used_auto","used_autobusM1",
+           "used_autobus","used_bicicleta","used_caminar","veces_auto")
+
+# Grafo vacío
+dag <- empty.graph(nodes)
+
+# Definir arcos directamente como matriz
+arcs(dag) <- matrix(c(
+  # Ocupacion depende de sexo, estrato, entidad, tloc
+  "sexo","Ocupacion",
+  "estrato","Ocupacion",
+  "entidad","Ocupacion",
+  "tloc","Ocupacion",
+  
+  # Medios de transporte dependen de sexo, estrato, entidad, tloc, Ocupacion
+  "sexo","used_auto",
+  "estrato","used_auto",
+  "entidad","used_auto",
+  "tloc","used_auto",
+  "Ocupacion","used_auto",
+  
+  "sexo","used_autobusM1",
+  "estrato","used_autobusM1",
+  "entidad","used_autobusM1",
+  "tloc","used_autobusM1",
+  "Ocupacion","used_autobusM1",
+  
+  "sexo","used_autobus",
+  "estrato","used_autobus",
+  "entidad","used_autobus",
+  "tloc","used_autobus",
+  "Ocupacion","used_autobus",
+  
+  "sexo","used_bicicleta",
+  "estrato","used_bicicleta",
+  "entidad","used_bicicleta",
+  "tloc","used_bicicleta",
+  "Ocupacion","used_bicicleta",
+  
+  "sexo","used_caminar",
+  "estrato","used_caminar",
+  "entidad","used_caminar",
+  "tloc","used_caminar",
+  "Ocupacion","used_caminar",
+  
+  "used_auto","veces_auto"
+), ncol = 2, byrow = TRUE,
+dimnames = list(NULL, c("from","to")))
+
+
+```
+
+```{r}
+graphviz.plot(dag, shape = "ellipse") #Referencias : https://www.tandfonline.com/doi/full/10.1080/14427591.2023.2212676
+#Articulo sobre ocupacion
+
+#Referencias : https://repository.eafit.edu.co/server/api/core/bitstreams/710b4da3-8e42-43cf-b3c7-318c0a901a15/content #Articulo sobre transporte
+
+#Las referencias hablan de como los factores sociales determinan la ocupacion y esta misma mas los factores sociales determinan el medio de transporte
+```
+
+```{r}
+score(dag,data= data , type = "bic") #Score de la primer DAG
+```
+
+
+#DAG 2
+
+```{r}
+nodes <- c("sexo","estrato","entidad","tloc",
+           "Ocupacion","used_auto","used_autobusM1",
+           "used_autobus","used_bicicleta","used_caminar","veces_auto")
+
+dag <- empty.graph(nodes)
+
+arcs(dag) <- matrix(c(
+  "sexo","used_auto",
+  "sexo","used_bicicleta",
+  "estrato","used_auto",
+  "estrato","used_autobusM1",
+  "estrato","used_autobus",
+  "estrato","used_caminar",
+  "entidad","used_auto",
+  "entidad","used_autobusM1",
+  "entidad","used_autobus",
+  "tloc","used_bicicleta",
+  "tloc","used_caminar",
+  "Ocupacion","used_auto",
+  "Ocupacion","used_autobus",
+  "used_auto","used_autobus",
+  "used_auto","used_bicicleta",
+  "used_autobus","used_caminar",
+  "used_auto","veces_auto"
+), ncol = 2, byrow = TRUE,
+dimnames = list(NULL, c("from","to")))
+
+graphviz.plot(dag, layout = "dot", shape = "ellipse") #Referencias: Está basado en lo mismo que lo anterior pero aqui asumimos que ocupacion tambien es independiente y en el hecho de que si usa auto es un transporte privado y por lo tanto es probable que no utiliza autobus ni bicicleta ni camina
+```
+```{r}
+score(dag,data= data , type = "bic")
+```
+
+## Por lo tanto la DAG 1 es mejor que la DAG2 esto puede ser por el hecho de que la ocupación si es depenediente de los factores sociales jsuto como el artículo lo describe 
+#DAG3
+```{r}
+
+best_dag= hc(data,type = "aic") #Obtenemos la mejor dag con hilll climbing
+
+
+
+# Dibujar
+graphviz.plot(best_dag, shape="ellipse")
+```
+
+```{r}
+score(best_dag,data= data , type = "bic") #Score de la mejor DAG
+```
+
+```{r}
+#Fittear la mejor DAG
+fitted_best_dag=bn.fit(best_dag,data = data) 
+```
+
+#Query 1
+
+## ¿Cuál es la probabilidad de que una persona del estrato socioeconómico más bajo camine o use bicicleta como medio de transporte versus una persona del estrato más alto?
+
+
+```{r}
+p1=cpquery(fitted_best_dag,event =(used_bicicleta=="True" | used_caminar=="True"), evidence = (estrato=="Bajo") )
+
+p2=cpquery(fitted_best_dag,event =(used_bicicleta=="True" | used_caminar=="True"), evidence = (estrato=="Alto") )
+
+cat("Probabilidad de que alguien de estrato bajo camine o use bicicleta: ", p1, "\n")
+cat("Probabilidad de que alguien de estrato alto camine o use bicicleta: ", p2, "\n")
+```
+##Por lo tanto es mucho más probable que use bicicleta o camine alguien del estrato más bajo que de estrato más alto
+
+#Query 2
+
+## ¿Cuál es la probabilidad de que una persona de sexo femenino de la entidad de Mexico que habita en una localidad de 15,000 a 99,999 habitantes utilice un autobús?	
+
+```{r}
+cpquery(fitted_best_dag, event=(used_autobus== "True" | used_autobusM1== "True") ,evidence = (sexo == "Mujer" & entidad == "Mexico" & tloc == "Localidades de 15,000 a 99,999 habitantes") )
+```
+##Esto nos indica que soo hay una probabilidad del 11% de personas las cuales tomaran el camion y tiene sentido porque vienen de una localidad muy pequeña y ahi casi no hay transporte publico
+
+#Query 3
+
+## ¿Cuál es la probabilidad de que una estudiante mujer haga más de 2 viajes al día en un automóvil?	
+```{r}
+p1=cpquery(fitted_best_dag, event=(veces_auto == "True") ,evidence = (Ocupacion == "Es estudiante"& sexo == "Mujer" ) )
+
+
+
+
+cat("Probabilidad de que una estudiante mujer haga más de 2 viajes al día en un automóvil: ", p1, "\n")
+
+```
+
+#Esta probabilidad tan baja en parte es debido a que la encuesta  tiene muchos mas observaciones del estrato bajo que del alto  esto provoca que tales personas incluso no poseen un auto propio.Aunque si lo cambiamos a que sea una mujer estudiante de estrato alto tendremos:
+
+```{r}
+p=cpquery(fitted_best_dag, event=(veces_auto == "True") ,evidence = (Ocupacion == "Es estudiante"& sexo == "Mujer" & estrato == "Alto") )
+
+
+
+
+cat("Probabilidad de que una estudiante mujer de estrato alto haga más de 2 viajes al día en un automóvil: ", p, "\n")
+```
+
+## Aumenta bastante la probabilidad
+
