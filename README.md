@@ -57,8 +57,7 @@ Responder consultas probabilísticas específicas sobre comportamientos de movil
 1. Los datos originales se encuentran en `data/raw/eod_2017_csv/`
 2. Ejecutar scripts de preprocessing en `code/preprocessing/`
 3. Realizar análisis con scripts en `code/analysis/` y `code/models/`
-4. Resultados y figuras se generan en `results/`
-
+   
 ## Documentación
 
 - **Artículo completo**: `docs/articles/articulo_bn_viajes.tex`
