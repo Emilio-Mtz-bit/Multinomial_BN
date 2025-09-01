@@ -4,8 +4,9 @@ author: ""
 format: html
 editor: visual
 ---
+
 ```{r}
-data = read.csv("DF_DAG(Viajes).csv")
+data = read.csv("DF_DAG(Viajes).csv",stringsAsFactors = TRUE)
 data[] <- lapply(data, as.factor)
 data = subset(data, select = -edad)
 data = subset(data, select = -sexo)
@@ -20,14 +21,13 @@ cat("Datos faltantes por variable:\n")
 colSums(is.na(data))
 
 ```
+
 ```{r}
 # Eliminar filas con datos faltantes
 data_clean = na.omit(data)
 cat("\nFilas originales:", nrow(data))
 cat("\nFilas después de eliminar NA:", nrow(data_clean))
 ```
-
-
 
 #DAG 1
 
@@ -69,22 +69,20 @@ dag1
 ```{r}
 graphviz.plot(dag1, shape = "ellipse")
 ```
+
 ## Evaluacion de la Primera DAG
+
 ```{r}
 bn_mle1 = bn.fit(dag1, data = data_clean, method = "mle")
 score(dag1, data = data_clean, type = "bic")
 ```
+
 ```{r}
 arc.strength(dag1, data = data_clean, criterion = "mi")
 ```
 
-
-
-
-
-
-
 # DAG 2
+
 ```{r}
 dag2 = empty.graph(nodes = c("entidad", "used_auto", "used_autobusM1", "used_bicicleta", 
                              "used_autobus", "used_caminar", "estrato", "tam_localidad"
@@ -136,6 +134,7 @@ graphviz.plot(dag2, shape = "ellipse")
 ```
 
 ## Evaluacion DAG 2
+
 ```{r}
 bn_mle2 = bn.fit(dag2, data = data_clean, method = "mle")
 score(dag2, data = data_clean, type = "bic")
@@ -144,11 +143,6 @@ score(dag2, data = data_clean, type = "bic")
 ```{r}
 arc.strength(dag2, data = data_clean, criterion = "mi")
 ```
-
-
-
-
-
 
 #Best DAG (Hill Climbing)
 
@@ -159,18 +153,17 @@ best_dag = hc(data_clean, type = "bic")
 ```{r}
 graphviz.plot(best_dag, shape = "ellipse")
 ```
-## Evaluacion Best DAG
 
+## Evaluacion Best DAG
 
 ```{r}
 bn_mle_best = bn.fit(best_dag, data = data_clean, method = "mle")
 score(best_dag, data = data_clean, type = "bic")
 ```
+
 ```{r}
 arc.strength(best_dag, data = data_clean, criterion = "mi")
 ```
-
-
 
 # Comparacion de la tres DAGS
 
@@ -184,7 +177,6 @@ cat("Score BIC DAG 2:", score_dag2, "\n")
 cat("Score BIC DAG 3:", score_dag3, "\n")
 ```
 
-
 # Query 4
 
 ¿Cuál es la probabilidad de que un viaje con duración menor a 40 minutos se realice en transporte motorizado versus un viaje con transporte no motorizado?
@@ -196,5 +188,5 @@ cpquery(bn_mle_best, event = ((motorizado == "No")&(no_motorizado == "Si")), evi
 ```{r}
 cpquery(bn_mle_best, event = ((motorizado == "Si")&(no_motorizado == "No")), evidence = (viaje_corto == "Menos_40min"), n = 10^6)
 ```
-Como podemos ver aqui es mayor la probabilidad de que los viajes menores a 40 min se realicen en transportes no motorizados, la diferencia de probabilidad no es mucha pero esto concuerda con las ultimas tendencias que se han dado en el valle de Mexico, ya que se esta optando en usar mejor bicicletas o irse caminando debido a que el trafico en las zomas urbanas es muy pesado y muchas veces haces menos tiempo en transportes no motorizados
 
+Como podemos ver aqui es mayor la probabilidad de que los viajes menores a 40 min se realicen en transportes no motorizados, la diferencia de probabilidad no es mucha pero esto concuerda con las ultimas tendencias que se han dado en el valle de Mexico, ya que se esta optando en usar mejor bicicletas o irse caminando debido a que el trafico en las zomas urbanas es muy pesado y muchas veces haces menos tiempo en transportes no motorizados

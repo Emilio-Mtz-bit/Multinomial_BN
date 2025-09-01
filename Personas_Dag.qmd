@@ -1,8 +1,7 @@
 
 ```{r}
 set.seed(12345)
-data=data_persona
-data <- as.data.frame(data_persona)
+data = read.csv("data_persona.csv",stringsAsFactors = TRUE)
 data
 
 

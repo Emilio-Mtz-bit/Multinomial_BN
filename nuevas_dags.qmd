@@ -13,7 +13,6 @@ data = read.csv("DF_DAG(Viajes).csv",stringsAsFactors = TRUE)
 head(data)
 ```
 
-
 ```{r}
 colnames(data)
 ```

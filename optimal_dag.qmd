@@ -20,7 +20,6 @@ data = read.csv("data_limpio.csv",stringsAsFactors = TRUE)
 head(data)
 ```
 
-
 ```{r}
 data$sexo <- factor(data$sexo, levels=c(1,2), labels=c("Hombre", "Mujer"))
 data$estudiante <- factor(data$estudiante, levels=c(0,1), labels=c("No", "Si"))
@@ -44,8 +43,8 @@ data$edad_cat <- cut(data$edad, breaks=c(0,18,35,65,100), labels=c("Joven", "Adu
 data$hora_cat <- cut(data$hora_ini, breaks=c(-1,6,12,18,24), labels=c("Madrugada", "Mañana", "Tarde", "Noche"))
 ```
 
-
 # Construccion de variables para responder las queries
+
 ```{r}
 #Query 1
 data$transporte_no_motor <- factor(ifelse(data$used_caminar == "Si" | data$used_bicicleta == "Si", "Si", "No"))
@@ -77,8 +76,8 @@ data$viaje_corto <- factor(ifelse(data$duracion_min < 40, "Menos_40min", "Mas_40
 
 Se crean variables derivadas específicas para las queries: transporte no motorizado, estratos extremos, duración de viaje, localidad media, entidad Ciudad de México, y número de viajes por día.
 
-
 # Limpieza de datos para bnlearn
+
 ```{r}
 # Verificar datos faltantes
 colSums(is.na(data))
@@ -89,11 +88,13 @@ colSums(is.na(data))
 data <- na.omit(data)
 cat("Datos después de eliminar NAs:", nrow(data), "filas\n")
 ```
+
 Se eliminan los casos con datos faltantes ya que bnlearn requiere datos completos para calcular scores.
 
 # Propuesta de 3 DAGs diferentes para responder a las queries
 
 ## DAG 1: Enfoque Sociodemográfico
+
 Prioriza las características demográficas como determinantes principales de las decisiones de transporte
 
 ```{r}
@@ -124,6 +125,7 @@ arcs(dag1) = arc_set1
 modela las características demográficas (edad, sexo, estrato) como causas directas de las elecciones de transporte. Esta DAG asume que las decisiones de movilidad están determinadas principalmente por el perfil socioeconómico.
 
 ## DAG 2: Enfoque de Accesibilidad y Contexto
+
 Enfatiza cómo el contexto geográfico y temporal influye en las opciones de transporte
 
 ```{r}
@@ -152,6 +154,7 @@ arcs(dag2) = arc_set2
 Esta prioriza el contexto geográfico (entidad, tamaño de localidad) y temporal (hora, duración) como determinantes de la elección de transporte. Modela cómo la disponibilidad y eficiencia del transporte varían según ubicación y tiempo.
 
 ## DAG 3: Enfoque de Patrones de Movilidad
+
 Se centra en los patrones de uso de transporte y sus interrelaciones
 
 ```{r}
@@ -160,7 +163,7 @@ vars_dag3 <- c("estrato", "sexo", "estudiante", "used_auto", "used_caminar",
 data_dag3 <- data[vars_dag3]
 ```
 
-```{r}  
+```{r}
 dag3 = empty.graph(nodes = names(data_dag3))
 arc_set3 = matrix(c("estrato", "used_auto",
                     "sexo", "used_caminar",
@@ -184,22 +187,24 @@ Esta DAG modela las interacciones entre diferentes modos de transporte. Asume qu
 library(Rgraphviz)
 graphviz.plot(dag1, shape = "ellipse", main = "DAG1")
 ```
-Se puede observar que esta DAG esta muy enfocada en la demografia pero no se incluyen variables temporales importantes.
 
+Se puede observar que esta DAG esta muy enfocada en la demografia pero no se incluyen variables temporales importantes.
 
 ```{r}
 graphviz.plot(dag2, shape = "ellipse", main = "DAG2")
 ```
+
 Podemos ver que esta DAG evite redundancias entre variables de transporte.
 
 ```{r}
 graphviz.plot(dag3, shape = "ellipse", main = "DAG3")
 ```
-Podemos ver que esta DAG incluye muchas variables de transporte específico que tal vez, podrian crear multicolinealidad. Tampoco captura el contexto geográfico específico y las relaciones entre multiples nodos de transporte pueden ser circuoares. 
 
-# Hipótesis de la red que se ajuste mejor a los datos antes de scores y hill climbing. 
-Dada el equilibrio de la red, creemos que la DAG 2 puede ser la que se ajuste mejor a los datos. 
+Podemos ver que esta DAG incluye muchas variables de transporte específico que tal vez, podrian crear multicolinealidad. Tampoco captura el contexto geográfico específico y las relaciones entre multiples nodos de transporte pueden ser circuoares.
 
+# Hipótesis de la red que se ajuste mejor a los datos antes de scores y hill climbing.
+
+Dada el equilibrio de la red, creemos que la DAG 2 puede ser la que se ajuste mejor a los datos.
 
 ## Scores de los 3 DAGs propuestos
 
@@ -232,7 +237,6 @@ best_dag2 = hc(data_dag2)
 modelstring(best_dag2)
 ```
 
-
 ```{r}
 best_dag2_aic = hc(data_dag2, score = "aic")
 modelstring(best_dag2_aic)
@@ -247,7 +251,7 @@ score_hc2_aic <- score(best_dag2, data = data_dag2, type = "aic")
 cat("DAG 2 Hill Climbing - BIC:", score_hc2_bic, "AIC:", score_hc2_aic, "\n")
 ```
 
-## Tests de Independencia Condicional 
+## Tests de Independencia Condicional
 
 ```{r}
 ci.test("used_autobus", "hora_cat", "tam_localidad", test = "mi", data = data_dag2)
@@ -270,7 +274,6 @@ arc.strength(dag2, data = data_dag2, criterion = "mi")
 ```{r}
 arc.strength(best_dag2, data = data_dag2, criterion = "mi")
 ```
-
 
 ```{r}
 graphviz.plot(best_dag2, shape = "ellipse", main = "Mejor DAG 2 - Hill Climbing")
@@ -308,7 +311,7 @@ prob_mujer_cdmx_autobus <- cpquery(bn_final, event = (used_autobus == "Si"), evi
 cat("Probabilidad mujer CDMX localidad media use autobús:", prob_mujer_cdmx_autobus, "\n")
 ```
 
-## Query 3: Probabilidad estudiante mujer >2 viajes en auto
+## Query 3: Probabilidad estudiante mujer \>2 viajes en auto
 
 ¿Cuál es la probabilidad de que una estudiante mujer haga más de 2 viajes al día en un automóvil?
 
@@ -317,5 +320,3 @@ prob_estudiante_mujer_viajes <- cpquery(bn_final, event = (used_auto == "Si" & m
 
 cat("Probabilidad estudiante mujer haga >2 viajes en auto:", prob_estudiante_mujer_viajes, "\n")
 ```
-
-

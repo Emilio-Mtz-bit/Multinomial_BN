@@ -14,11 +14,6 @@ editor: source
 ##Ejemplo: Transporte
 
 ```{r}
-#! eval: false
-
-install.packages("bnlearn")
-```
-```{r}
 library(bnlearn)
 ```
 
