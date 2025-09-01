@@ -1,0 +1,212 @@
+---
+title: "nuevas_dags"
+format: html
+editor: visual
+---
+
+```{r}
+library(bnlearn)
+```
+
+```{r}
+data = read.csv("DF_DAG(Viajes).csv",stringsAsFactors = TRUE)
+head(data)
+```
+
+
+```{r}
+colnames(data)
+```
+
+```{r}
+# Convertir variables numéricas a factores para bnlearn
+data$entidad = as.factor(data$entidad)
+data$tam_localidad = as.factor(data$tam_localidad)
+data$duracion_min = as.factor(data$duracion_min)
+
+# Verificar datos faltantes
+cat("Datos faltantes por variable:\n")
+colSums(is.na(data))
+
+# Eliminar filas con datos faltantes
+data_clean = na.omit(data)
+cat("\nFilas originales:", nrow(data))
+cat("\nFilas después de eliminar NA:", nrow(data_clean))
+
+str(data_clean)
+```
+
+```{r}
+# Verificar las variables disponibles en datos limpios
+names(data_clean)
+```
+
+## Propuesta de 3 DAGs iniciales para análisis de viajes
+
+### DAG 1
+
+```{r}
+# DAG 1: Influencia Socioeconómica - TODAS las variables del dataset
+dag1 = empty.graph(nodes = c("entidad", "used_auto", "used_autobusM1", "used_bicicleta", 
+                            "used_autobus", "used_caminar", "estrato", "tam_localidad", 
+                            "sexo", "edad", "motorizado", "no_motorizado", 
+                            "hora_cat", "duracion_min", "viaje_corto"))
+```
+
+```{r}
+arc_set1 = matrix(c("entidad", "estrato",
+                   "estrato", "used_auto",
+                   "estrato", "used_autobusM1", 
+                   "tam_localidad", "used_autobus",
+                   "sexo", "used_bicicleta",
+                   "edad", "used_caminar",
+                   "used_auto", "motorizado",
+                   "used_autobusM1", "motorizado",
+                   "used_autobus", "motorizado", 
+                   "used_bicicleta", "no_motorizado",
+                   "used_caminar", "no_motorizado",
+                   "motorizado", "hora_cat",
+                   "no_motorizado", "hora_cat",
+                   "hora_cat", "duracion_min",
+                   "duracion_min", "viaje_corto"), byrow = TRUE, ncol = 2,
+                 dimnames = list(NULL, c("from", "to")))
+```
+
+```{r}
+arcs(dag1) = arc_set1
+dag1
+```
+
+```{r}
+bn_mle1 = bn.fit(dag1, data = data_clean, method = "mle")
+score(dag1, data = data_clean, type = "bic")
+```
+
+### DAG 2: Patrones Temporales y Modalidad de Transporte
+
+```{r}
+# DAG 2: Patrones Temporales - TODAS las variables del dataset
+dag2 = empty.graph(nodes = c("entidad", "used_auto", "used_autobusM1", "used_bicicleta", 
+                            "used_autobus", "used_caminar", "estrato", "tam_localidad", 
+                            "sexo", "edad", "motorizado", "no_motorizado", 
+                            "hora_cat", "duracion_min", "viaje_corto"))
+```
+
+```{r}
+arc_set2 = matrix(c("entidad", "tam_localidad",
+                   "sexo", "used_auto",
+                   "edad", "used_autobusM1",
+                   "tam_localidad", "used_autobus", 
+                   "estrato", "used_bicicleta",
+                   "sexo", "used_caminar",
+                   "used_auto", "motorizado",
+                   "used_autobusM1", "motorizado",
+                   "used_autobus", "motorizado",
+                   "used_bicicleta", "no_motorizado", 
+                   "used_caminar", "no_motorizado",
+                   "edad", "hora_cat",
+                   "estrato", "hora_cat",
+                   "motorizado", "duracion_min",
+                   "no_motorizado", "duracion_min",
+                   "duracion_min", "viaje_corto"), byrow = TRUE, ncol = 2,
+                 dimnames = list(NULL, c("from", "to")))
+```
+
+```{r}
+arcs(dag2) = arc_set2
+dag2
+```
+
+```{r}
+bn_mle2 = bn.fit(dag2, data = data_clean, method = "mle")
+score(dag2, data = data_clean, type = "bic")
+```
+
+### DAG 3: Modelo Integrado de Decisión de Viaje
+
+```{r}
+# DAG 3: Modelo Integrado - TODAS las variables del dataset
+dag3 = empty.graph(nodes = c("entidad", "used_auto", "used_autobusM1", "used_bicicleta", 
+                            "used_autobus", "used_caminar", "estrato", "tam_localidad", 
+                            "sexo", "edad", "motorizado", "no_motorizado", 
+                            "hora_cat", "duracion_min", "viaje_corto"))
+```
+
+```{r}
+arc_set3 = matrix(c("entidad", "estrato",
+                   "estrato", "tam_localidad",
+                   "tam_localidad", "used_auto",
+                   "sexo", "used_autobusM1", 
+                   "edad", "used_autobus",
+                   "estrato", "used_bicicleta",
+                   "tam_localidad", "used_caminar",
+                   "used_auto", "motorizado",
+                   "used_autobusM1", "motorizado", 
+                   "used_autobus", "motorizado",
+                   "used_bicicleta", "no_motorizado",
+                   "used_caminar", "no_motorizado",
+                   "sexo", "hora_cat",
+                   "motorizado", "duracion_min",
+                   "no_motorizado", "duracion_min", 
+                   "hora_cat", "duracion_min",
+                   "duracion_min", "viaje_corto"), byrow = TRUE, ncol = 2,
+                 dimnames = list(NULL, c("from", "to")))
+```
+
+```{r}
+arcs(dag3) = arc_set3
+dag3
+```
+
+```{r}
+bn_mle3 = bn.fit(dag3, data = data_clean, method = "mle")
+score(dag3, data = data_clean, type = "bic")
+```
+
+## Comparación de los 3 DAGs propuestos
+
+```{r}
+score_dag1 = score(dag1, data = data_clean, type = "bic")
+score_dag2 = score(dag2, data = data_clean, type = "bic")
+score_dag3 = score(dag3, data = data_clean, type = "bic")
+
+cat("Score BIC DAG 1:", score_dag1, "\n")
+cat("Score BIC DAG 2:", score_dag2, "\n")
+cat("Score BIC DAG 3:", score_dag3, "\n")
+```
+
+```{r}
+arc.strength(dag1, data = data_clean, criterion = "mi")
+```
+
+```{r}
+arc.strength(dag2, data = data_clean, criterion = "mi")
+```
+
+```{r}
+arc.strength(dag3, data = data_clean, criterion = "mi")
+```
+
+## Visualización de los 3 DAGs propuestos
+
+```{r}
+library(Rgraphviz)
+```
+
+```{r}
+# Gráfica del DAG 1: Influencia Socioeconómica
+graphviz.plot(dag1, main = "DAG 1: Influencia Socioeconómica en el Transporte", 
+              shape = "ellipse", layout = "dot")
+```
+
+```{r}
+# Gráfica del DAG 2: Patrones Temporales
+graphviz.plot(dag2, main = "DAG 2: Patrones Temporales y Modalidad de Transporte", 
+              shape = "ellipse", layout = "dot")
+```
+
+```{r}
+# Gráfica del DAG 3: Modelo Integrado
+graphviz.plot(dag3, main = "DAG 3: Modelo Integrado de Decisión de Viaje", 
+              shape = "ellipse", layout = "dot")
+```

@@ -88,4 +88,3 @@ data = data.drop(columns = ["used_colectivo", "used_uber", "used_taxi", "used_me
 data.columns
 
 ```
-
